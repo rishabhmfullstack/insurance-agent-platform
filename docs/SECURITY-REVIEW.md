@@ -16,7 +16,7 @@ happens in the hardening phase; boxes get checked as features land.
 ### Authorization
 - [x] Every agent-zone query scoped `WHERE … AND agent_id = session.agentId` — Phase 2 (lib/data/*)
 - [x] Wrong-owner lookups return not-found (no existence oracle) — Phase 2, verified over HTTP
-- [ ] Repository shape: only `getApplicationForAgent` / `getApplicationByToken` — lands with applications
+- [x] Repository shape: only `getApplicationForAgent` / `getApplicationByToken` — Phase 3 (lib/data/applications.ts)
 - [x] Composite FK prevents cross-tenant agent_id divergence — schema, Phase 1; behaviorally verified by scripts/verify-schema.ts (38/38)
 
 ### Input validation
@@ -31,11 +31,13 @@ happens in the hardening phase; boxes get checked as features land.
 - [ ] Client redirect never writes state
 
 ### Tokens & customer data
-- [ ] Review token: crypto.randomBytes(16), unguessable, single-purpose
-- [ ] Review page renders minimal PII (name + product + premium only)
-- [ ] Referrer-Policy: no-referrer on review page
-- [ ] Uniform "link not valid" response for bad tokens
-- [ ] Demo data entirely fictional (stated in README)
+- [x] Review token: crypto.randomBytes(16), unguessable, single-purpose — Phase 3
+- [x] Review page renders minimal PII — enforced BY THE QUERY: the token-scoped
+      select carries only the customer name (verified by integration test +
+      HTTP leak check) — Phase 3
+- [x] Referrer-Policy: no-referrer on /review/* — Phase 3, verified in headers
+- [x] Uniform 404 for bad tokens — Phase 3, verified over HTTP
+- [x] Demo data entirely fictional (stated in README) — Phase 2
 
 ### Secrets & config
 - [x] Secrets only in env vars; `.env` gitignored; `.env.example` committed — Phase 1

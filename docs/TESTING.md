@@ -49,3 +49,16 @@ sent/logged.
   Manual HTTP flow verified: login → dashboard → products → customer profile
   (eligibility verdicts + premium previews exact), unknown-id 404, anonymous
   redirect, duplicate-phone rejection.
+- Phase 3: **46 tests total.** New: integration tests for the state-machine
+  chokepoint against the real DB (draft creation with frozen premium,
+  server-side eligibility re-check, cross-agent not_found, duplicate-quote
+  arbitration, attachPdf exactly-once, token access with minimal-PII select,
+  agree + idempotency, expiry write-back freeing the unique slot, AGREED
+  never expirable), a real PDF render test, and WhatsApp message/url units.
+  NOTE: integration tests need DATABASE_URL + the local database running.
+  Manual end-to-end over real HTTP (progressive-enhancement form replays,
+  multipart): create quote → 303 to application → PDF bytes served → review
+  page (anon) → I Agree POST → agreed state on both customer and agent views;
+  duplicate create lands on the existing application; bad token 404;
+  Referrer-Policy header present; PII leak grep on the review page came back
+  empty.

@@ -8,10 +8,11 @@ issue policies with email confirmation.
 > **Demo application.** All data is fictional; payments run in Razorpay test
 > mode; no real insurance is offered.
 
-**Status: Phase 2** — auth, verified schema, product catalogue, customer
-management, eligibility + premium engine. Applications/PDF/WhatsApp/payment
-land in subsequent phases; this README's deploy section is finalized at ship
-time.
+**Status: Phase 3** — auth, verified schema, catalogue, customers,
+eligibility + premium, application/quote lifecycle with personalized PDF,
+tokenized customer review + consent, WhatsApp demo sharing with a
+communications audit log. Payment, policy activation and email land next;
+this README's deploy section is finalized at ship time.
 
 ## Documentation
 

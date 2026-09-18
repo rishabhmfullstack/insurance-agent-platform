@@ -8,9 +8,10 @@ issue policies with email confirmation.
 > **Demo application.** All data is fictional; payments run in Razorpay test
 > mode; no real insurance is offered.
 
-**Status: Phase 1 — foundation** (auth, schema, protected shell). The full
-flow lands in subsequent phases; this README's run/deploy sections are
-finalized at ship time.
+**Status: Phase 2** — auth, verified schema, product catalogue, customer
+management, eligibility + premium engine. Applications/PDF/WhatsApp/payment
+land in subsequent phases; this README's deploy section is finalized at ship
+time.
 
 ## Documentation
 
@@ -39,7 +40,14 @@ npx prisma db seed         # demo agent
 npm run dev
 ```
 
-Checks: `npm run typecheck` · `npm run lint` · `npm run build`
+Checks: `npm test` (32 domain unit tests) · `npm run typecheck` ·
+`npm run lint` · `npm run build` ·
+`npx tsx scripts/verify-schema.ts` (38 behavioral checks of every DB
+constraint — safe to run on a seeded database)
+
+Local database note: any PostgreSQL works. Development runs real PG 18
+binaries via `embedded-postgres` on port 5433 (see docs/DECISIONS.md D-20);
+create the database with `ENCODING 'UTF8'`.
 
 ## Demo credentials (seeded)
 

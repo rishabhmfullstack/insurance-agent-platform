@@ -98,3 +98,24 @@ enforcement.
 **D-19 · bcryptjs over bcrypt.** Pure-JS implementation: no native build on
 Windows dev or Vercel deploy; cost factor 10 (OWASP-acceptable for MVP) and
 the hash format is compatible if swapped later.
+
+**D-20 · Local dev DB: embedded real PostgreSQL 18 (Phase 2).** The dev
+machine has no Docker or Postgres, and Neon provisioning needs the owner's
+account (browser OAuth). Rather than defer all DB verification to deploy day,
+development runs against real Postgres binaries via the `embedded-postgres`
+npm package (port 5433, outside the repo). Everything DB-level — migration,
+partial uniques, CHECKs, composite FK, sequence — is verified by
+`scripts/verify-schema.ts` (38 checks) and re-runs identically against Neon at
+deploy. Gotcha found and fixed: Windows initdb defaults to WIN1252, which
+cannot store "₹" — the database must be created with `ENCODING 'UTF8'`
+(Neon is UTF8 by default, so this is local-only).
+
+**D-21 · Auth.js `trustHost: true` (Phase 2).** Production builds outside
+Vercel fail with UntrustedHost (Vercel sets AUTH_TRUST_HOST automatically).
+Declared in code so local prod builds behave like the deployment; safe because
+the app only ever runs behind hosts we control. Found by the Phase 2 HTTP flow
+test — the Phase 1 smoke test never exercised the auth API routes.
+
+**D-22 · tsconfig target ES2020 (Phase 2).** The scaffold's ES2017 target
+rejects BigInt literals, which the paise convention (D-13) uses throughout.
+ES2020 is safely below every runtime we target (Node 20, evergreen browsers).

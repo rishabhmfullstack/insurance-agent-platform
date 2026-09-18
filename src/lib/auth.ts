@@ -10,6 +10,10 @@ import { config } from "@/lib/config";
 // Authorization is NOT done here — every query scopes by agentId (session.ts).
 export const { handlers, auth, signIn, signOut } = NextAuth({
   secret: config.AUTH_SECRET,
+  // Vercel sets AUTH_TRUST_HOST automatically; this makes local production
+  // builds behave the same. Safe here: the app always runs behind a host we
+  // control (Vercel / localhost).
+  trustHost: true,
   session: { strategy: "jwt" },
   pages: { signIn: "/login" },
   providers: [

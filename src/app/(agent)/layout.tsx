@@ -25,6 +25,12 @@ export default async function AgentLayout({
             >
               Dashboard
             </Link>
+            <Link
+              href="/products"
+              className="text-sm text-slate-600 hover:text-slate-900"
+            >
+              Products
+            </Link>
           </nav>
           <div className="flex items-center gap-4">
             <span className="text-sm text-slate-500">{agent.name}</span>

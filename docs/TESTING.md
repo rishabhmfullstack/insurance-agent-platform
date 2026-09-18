@@ -38,8 +38,14 @@ sent/logged.
 - payment failure → regenerate link path works
 - email failure → policy still ACTIVE, comms row FAILED, resend available
 
-## Phase 1 status
+## Status
 
-Foundation phase: no domain logic exists yet, so no unit tests yet — checks are
-`tsc --noEmit`, ESLint, and a production build. First Vitest suites land in
-Phase 2 with eligibility/premium.
+- Phase 1 (foundation): checks were `tsc --noEmit`, ESLint, production build,
+  HTTP smoke test.
+- Phase 2: **32 Vitest unit tests** for eligibility + premium (all boundary
+  ages, band edges, factor stacking, round-once behavior) — `npm test`.
+  Plus `scripts/verify-schema.ts`: 38 behavioral checks of every DB constraint
+  against a real PostgreSQL (partial uniques, CHECKs, composite FK, sequence).
+  Manual HTTP flow verified: login → dashboard → products → customer profile
+  (eligibility verdicts + premium previews exact), unknown-id 404, anonymous
+  redirect, duplicate-phone rejection.

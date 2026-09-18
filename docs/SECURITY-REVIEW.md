@@ -14,15 +14,15 @@ happens in the hardening phase; boxes get checked as features land.
 - [x] Signup password minimum rules (zod, 8+ chars) — Phase 1
 
 ### Authorization
-- [ ] Every agent-zone query scoped `WHERE … AND agent_id = session.agentId`
-- [ ] Wrong-owner lookups return not-found (no existence oracle)
-- [ ] Repository shape: only `getApplicationForAgent` / `getApplicationByToken`
-- [x] Composite FK prevents cross-tenant agent_id divergence — schema, Phase 1
+- [x] Every agent-zone query scoped `WHERE … AND agent_id = session.agentId` — Phase 2 (lib/data/*)
+- [x] Wrong-owner lookups return not-found (no existence oracle) — Phase 2, verified over HTTP
+- [ ] Repository shape: only `getApplicationForAgent` / `getApplicationByToken` — lands with applications
+- [x] Composite FK prevents cross-tenant agent_id divergence — schema, Phase 1; behaviorally verified by scripts/verify-schema.ts (38/38)
 
 ### Input validation
-- [ ] zod on every server action / route handler input
-- [x] Prisma parameterization (no raw string SQL) — standing
-- [ ] JSONB rule configs zod-parsed at read time
+- [x] zod on every server action / route handler input — Phase 2 (auth + customer actions)
+- [x] Prisma parameterization (no raw string SQL in app code) — standing
+- [x] JSONB rule configs zod-parsed at read time — Phase 2 (lib/data/products.ts)
 
 ### Payment integrity
 - [ ] Webhook HMAC verified against RAW body before any parsing/action

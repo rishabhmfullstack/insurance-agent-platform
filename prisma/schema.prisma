@@ -1,0 +1,185 @@
+// Insurance Agent Platform — finalized schema (docs/DATABASE.md is the source of truth).
+// Conventions: UUID PKs, snake_case DB names, all money in BIGINT paise,
+// timestamptz everywhere. Partial unique indexes, CHECK constraints and the
+// policy_number sequence live in raw migration SQL (Prisma cannot model them).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ProductCategory {
+  TERM
+  HEALTH
+  VEHICLE
+  OTHER
+}
+
+enum ApplicationStatus {
+  DRAFT
+  QUOTE_GENERATED
+  AGREED
+  PAYMENT_PENDING
+  ACTIVE
+  EXPIRED
+}
+
+enum PaymentStatus {
+  CREATED
+  PAID
+  FAILED
+  EXPIRED
+  CANCELLED
+}
+
+enum CommChannel {
+  WHATSAPP
+  EMAIL
+}
+
+enum CommMode {
+  DEMO
+  LIVE
+  LOG
+}
+
+enum CommStatus {
+  LOGGED
+  SENT
+  FAILED
+}
+
+model Agent {
+  id           String   @id @default(uuid()) @db.Uuid
+  name         String
+  email        String   @unique // lowercased in app before insert
+  passwordHash String   @map("password_hash")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  customers Customer[]
+
+  @@map("agents")
+}
+
+model Customer {
+  id           String   @id @default(uuid()) @db.Uuid
+  agentId      String   @map("agent_id") @db.Uuid
+  name         String
+  phone        String // E.164; the WhatsApp number
+  email        String
+  dob          DateTime @db.Date
+  annualIncome BigInt   @map("annual_income") // paise
+  city         String
+  isSmoker     Boolean  @map("is_smoker")
+  ownsVehicle  Boolean  @map("owns_vehicle")
+  vehicleYear  Int?     @map("vehicle_year") @db.SmallInt // CHECK: required iff ownsVehicle
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  agent        Agent         @relation(fields: [agentId], references: [id])
+  applications Application[]
+
+  @@unique([agentId, phone])
+  @@unique([id, agentId]) // target of the composite FK from applications (D-14)
+  @@index([agentId])
+  @@map("customers")
+}
+
+model Product {
+  id               String          @id @default(uuid()) @db.Uuid
+  category         ProductCategory
+  name             String
+  description      String
+  coverageAmount   BigInt          @map("coverage_amount") // paise
+  basePremium      BigInt          @map("base_premium") // paise, annual
+  eligibilityRules Json            @map("eligibility_rules") // zod-parsed at read
+  premiumFactors   Json            @map("premium_factors")
+  createdAt        DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  applications Application[]
+
+  @@map("products")
+}
+
+model Application {
+  id            String            @id @default(uuid()) @db.Uuid
+  agentId       String            @map("agent_id") @db.Uuid // consistency guaranteed by composite FK
+  customerId    String            @map("customer_id") @db.Uuid
+  productId     String            @map("product_id") @db.Uuid
+  status        ApplicationStatus @default(DRAFT)
+  premiumAmount BigInt            @map("premium_amount") // paise, FROZEN at creation
+  validUntil    DateTime          @map("valid_until") @db.Timestamptz(6) // creation + 30 days
+  reviewToken   String            @unique @map("review_token") // 128-bit random capability
+  pdfUrl        String?           @map("pdf_url") // NULL exactly while DRAFT (CHECK)
+  agreedAt      DateTime?         @map("agreed_at") @db.Timestamptz(6) // consent record (CHECK)
+  createdAt     DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  // Composite FK: an application can only carry its customer's true agent (D-14).
+  customer       Customer        @relation(fields: [customerId, agentId], references: [id, agentId])
+  product        Product         @relation(fields: [productId], references: [id])
+  payments       Payment[]
+  policy         Policy?
+  communications Communication[]
+
+  // Plus (raw SQL): partial unique (customer_id, product_id) WHERE status <> 'EXPIRED'
+  @@index([agentId, createdAt(sort: Desc)])
+  @@index([customerId])
+  @@map("applications")
+}
+
+model Payment {
+  id                String        @id @default(uuid()) @db.Uuid
+  applicationId     String        @map("application_id") @db.Uuid
+  providerLinkId    String        @unique @map("provider_link_id") // Razorpay payment-link id
+  providerPaymentId String?       @unique @map("provider_payment_id") // set by webhook; idempotency anchor
+  amount            BigInt // paise, copied from frozen premium
+  currency          String        @default("INR") @db.Char(3)
+  status            PaymentStatus @default(CREATED)
+  rawWebhookPayload Json?         @map("raw_webhook_payload") // audit: bytes that activated a policy
+  createdAt         DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  application Application @relation(fields: [applicationId], references: [id])
+
+  // Plus (raw SQL): partial unique (application_id) WHERE status = 'CREATED'
+  @@index([applicationId])
+  @@map("payments")
+}
+
+model Policy {
+  id            String   @id @default(uuid()) @db.Uuid
+  applicationId String   @unique @map("application_id") @db.Uuid // fail-closed: one policy per application
+  policyNumber  String   @unique @map("policy_number") // POL-YYYY-NNNNNN from policy_number_seq
+  startDate     DateTime @map("start_date") @db.Date
+  endDate       DateTime @map("end_date") @db.Date
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  application Application @relation(fields: [applicationId], references: [id])
+
+  @@map("policies")
+}
+
+model Communication {
+  id              String      @id @default(uuid()) @db.Uuid
+  applicationId   String      @map("application_id") @db.Uuid
+  channel         CommChannel
+  mode            CommMode // the honesty column: DEMO | LIVE | LOG
+  templateKey     String      @map("template_key") // quote_share | payment_share | policy_confirmation
+  recipient       String // phone or email as used
+  renderedContent String      @map("rendered_content")
+  status          CommStatus
+  error           String?
+  createdAt       DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  application Application @relation(fields: [applicationId], references: [id])
+
+  @@index([applicationId, createdAt])
+  @@map("communications")
+}

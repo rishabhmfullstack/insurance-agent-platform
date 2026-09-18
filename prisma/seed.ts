@@ -1,5 +1,17 @@
 import { PrismaClient, ProductCategory } from "@prisma/client";
 import { hashSync } from "bcryptjs";
+import {
+  agreeByToken,
+  attachPdf,
+  createDraftQuote,
+} from "../src/lib/domain/applications";
+import { generateAndStoreQuotePdf } from "../src/lib/integrations/pdf";
+import {
+  buildQuoteShareMessage,
+  reviewUrlFor,
+} from "../src/lib/integrations/messaging/whatsapp";
+import { config, pdfStorageMode } from "../src/lib/config";
+import { formatDate, formatPaise } from "../src/lib/format";
 
 // Idempotent seed (upserts; fixed ids for products, compound-unique upsert for
 // customers). All data is FICTIONAL — documented in the README.
@@ -183,6 +195,86 @@ async function main() {
     });
   }
   console.log(`Customers: ${CUSTOMERS.length}`);
+
+  await seedDemoApplications(agent.id);
+}
+
+// Reproducible mid-flow demo applications (D-27). Runs the REAL pipeline —
+// domain quote creation, real PDF generation + storage, real consent
+// transition — so nothing here is a hand-inserted fake. Deliberately NO
+// seeded payments, policies or ACTIVE applications: money states only ever
+// come from the actual payment flow.
+//   Meera  + Health Senior 3L → QUOTE_GENERATED (quote ready, PDF exists)
+//   Rohan  + Car Protect      → AGREED (+ one logged demo WhatsApp share)
+async function seedDemoApplications(agentId: string) {
+  const remoteDb = !/@(localhost|127\.0\.0\.1)[:/]/.test(process.env.DATABASE_URL ?? "");
+  if (remoteDb && pdfStorageMode === "local") {
+    console.log(
+      "Demo applications SKIPPED: remote database but no BLOB_READ_WRITE_TOKEN — " +
+        "PDF URLs would point at local storage. Re-run with the Blob token and APP_URL set.",
+    );
+    return;
+  }
+
+  const DEMOS = [
+    {
+      phone: "+919810000002", // Meera
+      productId: "00000000-0000-4000-8000-000000000104", // Health Senior 3L
+      target: "QUOTE_GENERATED" as const,
+    },
+    {
+      phone: "+919810000003", // Rohan
+      productId: "00000000-0000-4000-8000-000000000105", // Car Protect
+      target: "AGREED" as const,
+    },
+  ];
+
+  for (const demo of DEMOS) {
+    const customer = await prisma.customer.findUniqueOrThrow({
+      where: { agentId_phone: { agentId, phone: demo.phone } },
+    });
+    const existing = await prisma.application.findFirst({
+      where: { customerId: customer.id, productId: demo.productId, status: { not: "EXPIRED" } },
+    });
+    if (existing) {
+      console.log(`Demo application for ${customer.name}: exists (${existing.status}), skipped`);
+      continue;
+    }
+
+    const draft = await createDraftQuote(agentId, customer.id, demo.productId);
+    if (!draft.ok) {
+      console.log(`Demo application for ${customer.name}: not created (${draft.reason})`);
+      continue;
+    }
+    const app = await prisma.application.findUniqueOrThrow({
+      where: { id: draft.applicationId },
+      include: { customer: true, product: true },
+    });
+    const pdfUrl = await generateAndStoreQuotePdf(app, app.customer, app.product);
+    await attachPdf(app.id, pdfUrl);
+
+    if (demo.target === "AGREED") {
+      await prisma.communication.create({
+        data: {
+          applicationId: app.id,
+          channel: "WHATSAPP",
+          mode: config.WHATSAPP_MODE === "demo" ? "DEMO" : "LIVE",
+          templateKey: "quote_share",
+          recipient: app.customer.phone,
+          renderedContent: buildQuoteShareMessage({
+            customerName: app.customer.name,
+            productName: app.product.name,
+            premiumDisplay: formatPaise(app.premiumAmount),
+            validUntilDisplay: formatDate(app.validUntil),
+            reviewUrl: reviewUrlFor(app.reviewToken),
+          }),
+          status: "LOGGED",
+        },
+      });
+      await agreeByToken(app.reviewToken);
+    }
+    console.log(`Demo application: ${app.customer.name} — ${app.product.name} → ${demo.target}`);
+  }
 }
 
 main()

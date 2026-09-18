@@ -39,9 +39,10 @@
     "tailwindcss": "^4",
     "tsx": "^4.23.13",
     "typescript": "^5",
+    "vite-node": "^6.0.0",
     "vitest": "^4.1.11"
   },
   "prisma": {
-    "seed": "tsx prisma/seed.ts"
+    "seed": "vite-node -c vitest.config.mts prisma/seed.ts"
   }
 }

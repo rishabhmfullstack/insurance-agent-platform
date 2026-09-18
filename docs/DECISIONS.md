@@ -119,3 +119,25 @@ test — the Phase 1 smoke test never exercised the auth API routes.
 **D-22 · tsconfig target ES2020 (Phase 2).** The scaffold's ES2017 target
 rejects BigInt literals, which the paise convention (D-13) uses throughout.
 ES2020 is safely below every runtime we target (Node 20, evergreen browsers).
+
+**D-23 · Workflow orchestration layer (Phase 4).** The webhook route, the
+reconcile action and the agent payment actions all need the same flows
+(generate/regenerate link, process event, activate, email). Domain must not
+import integrations, and duplicating orchestration across callers is how the
+safety net drifts from the primary path. `lib/workflows/` composes domain +
+integrations; actions and routes stay thin. Dependency rule becomes
+`app → actions/routes → workflows → domain | integrations`.
+
+**D-24 · payments.short_url column (Phase 4).** The payable URL is
+provider-issued and not derivable from the link id, and both the review page
+and the WhatsApp message need it — second migration adds it. Found the moment
+the review page was wired; the kind of gap a schema pressure test can't catch
+before the consuming UI exists.
+
+**D-25 · Mock payment provider when keys are absent (Phase 4).** Same derived-
+mode pattern as PDF storage: no Razorpay keys → an in-memory mock behind the
+identical provider interface, with test helpers to simulate provider-side
+paid/expired. It exists so the full flow runs locally and in CI without an
+account; its URLs are deliberately inert (`mock-payments.invalid`) and the
+deployed app always runs real test-mode keys. Never presented as a real
+payment; the README service matrix states the active mode.

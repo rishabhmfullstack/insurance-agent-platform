@@ -25,10 +25,16 @@ happens in the hardening phase; boxes get checked as features land.
 - [x] JSONB rule configs zod-parsed at read time — Phase 2 (lib/data/products.ts)
 
 ### Payment integrity
-- [ ] Webhook HMAC verified against RAW body before any parsing/action
-- [ ] Amount + currency checked against frozen premium before activation
-- [ ] Idempotency: provider_payment_id unique + rows-affected-first activation
-- [ ] Client redirect never writes state
+- [x] Webhook HMAC verified against RAW body before any parsing/action —
+      Phase 4, constant-time compare; tested with tampered-body fixtures
+- [x] Amount + currency checked against frozen premium before activation —
+      Phase 4, fail-closed (payment stays CREATED, anomaly logged)
+- [x] Idempotency: provider_payment_id unique + rows-affected-FIRST activation
+      transaction + unique policy backstop — Phase 4, concurrency-tested
+- [x] Client redirect never writes state — review page reads DB truth only;
+      activation exists solely in webhook + reconcile (one shared path)
+- [x] Cancel-before-regenerate; provider-cancel failure aborts regeneration
+      (fail closed, no two payable links) — Phase 4
 
 ### Tokens & customer data
 - [x] Review token: crypto.randomBytes(16), unguessable, single-purpose — Phase 3

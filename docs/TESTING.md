@@ -62,3 +62,23 @@ sent/logged.
   duplicate create lands on the existing application; bad token 404;
   Referrer-Policy header present; PII leak grep on the review page came back
   empty.
+- Phase 4: **65 tests total.** New (19): payment-flow integration against the
+  real DB **through the actual webhook route handler with real HMAC
+  signatures** — link creation only from AGREED with the frozen amount,
+  open-link reuse (one open payment, server-enforced), invalid/missing/
+  tampered signature → 400 with no state change, amount + currency mismatch →
+  fail-closed anomaly, happy path → payment PAID + exactly one policy
+  (POL-YYYY-NNNNNN) + ACTIVE + email comm, duplicate webhook → one policy,
+  stale expired-event after PAID ignored, expired link → AGREED + fresh link,
+  cancel-before-regenerate, concurrent activation race → exactly one
+  'activated', reconcile: still_pending / provider-paid → activated via the
+  SAME path / provider-expired → reverted, email hard-failure (mocked) →
+  policy untouched + FAILED comm + resend attempts recorded.
+  Manual E2E (mock provider): agreed application → link generated →
+  PAYMENT_PENDING on agent + customer views → unsigned/bad-signature webhook
+  400 → signed webhook to the RUNNING server → ACTIVE + policy number on both
+  views + LOGGED email → duplicate webhook "already_active", one policy →
+  resend-email form replay → second comm row.
+  Remaining for real-API verification (needs Razorpay test keys): payment-link
+  create/cancel/fetch response shapes, live dashboard webhook delivery, test-
+  card checkout UX, callback redirect. Tracked in ai-logs/05.

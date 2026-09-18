@@ -85,11 +85,12 @@ separate columns) · pdf_url NULL (null exactly while DRAFT) · agreed_at NULL
 - indexes: (agent_id, created_at DESC), (customer_id)
 
 ### payments
-id · application_id FK · provider_link_id UNIQUE · provider_payment_id UNIQUE
-NULL (set by webhook — **the idempotency anchor**; Postgres allows many NULLs) ·
-amount BIGINT (copied from frozen premium) · currency CHAR(3) 'INR' ·
-status ENUM · raw_webhook_payload JSONB NULL (audit: the bytes that activated a
-policy)
+id · application_id FK · provider_link_id UNIQUE · short_url (payable URL —
+provider-issued, needed by the review page + WhatsApp message; added in
+migration 2, D-24) · provider_payment_id UNIQUE NULL (set by webhook — **the
+idempotency anchor**; Postgres allows many NULLs) · amount BIGINT (copied from
+frozen premium) · currency CHAR(3) 'INR' · status ENUM ·
+raw_webhook_payload JSONB NULL (audit: the bytes that activated a policy)
 - **Partial unique: (application_id) WHERE status = 'CREATED'** — at most one
   open link; regenerate must cancel first ⇒ double-payment structurally blocked.
 - CHECK: amount > 0

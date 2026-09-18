@@ -155,3 +155,15 @@ escape hatch), 30s integration timeouts, and a committed local-DB runner
 in). The suite's correctness was never in question — the same 65 tests pass in
 ~2s locally — but "tests can accidentally target production" was a real
 design gap.
+
+**D-27 · Seeded demo applications run the real pipeline (Ship).** The
+dashboard needs mid-flow state to be immediately understandable, but faking
+money states would undermine the whole fail-closed story. The seed creates
+two applications through the actual domain/integration code (quote creation,
+real PDF generation to storage, real consent transition): QUOTE_GENERATED and
+AGREED — never payments, policies or ACTIVE. The one ACTIVE policy on the
+deployment (POL-2026-000002) is a genuine test-mode payment through the
+production webhook, and the README says so. Implementation note: the seed
+runs under `vite-node` because `@react-pdf` uses internal package subpaths
+that Node's strict `exports` resolution rejects outside a bundler (tsx failed;
+Vite-style resolution — same as the test suite — works).

@@ -85,3 +85,15 @@ sent/logged.
   Remaining for real-API verification (needs Razorpay test keys): payment-link
   create/cancel/fetch response shapes, live dashboard webhook delivery, test-
   card checkout UX, callback redirect. Tracked in ai-logs/05.
+- Phase 5 (real infrastructure): all deferred real-API items cleared —
+  adapter create/fetch/cancel/paid mapping against the live Razorpay test
+  API, a REAL payment (Netbanking test Success) delivered by Razorpay's
+  webhook to production, signature verified, policy POL-2026-000002 issued
+  atomically, reconcile idempotent. See ai-logs/07 + 08.
+- Ship QA (production, 2026-09-18): seeded demo states render on all views
+  with Blob PDFs; second-agent isolation with a real account (empty
+  dashboard, cross-tenant 404s, account removed after); duplicate replay of
+  the stored real webhook payload → 200 already_active, still one policy;
+  wrong password → no session; short password rejected; prod env audit
+  clean. Full reviewer walkthrough re-run end-to-end before submission.
+  Happy-path status: PASSING on production.

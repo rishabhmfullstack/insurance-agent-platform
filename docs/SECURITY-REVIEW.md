@@ -1,8 +1,20 @@
 # Security Review — living checklist
 
 Two tiers: **MVP-required** (built and verified before submission) and
-**Production-deferred** (named honestly, deliberately not built). Final pass
-happens in the hardening phase; boxes get checked as features land.
+**Production-deferred** (named honestly, deliberately not built).
+
+**Final pass: 2026-09-18 (ship phase), all MVP boxes verified — most of them
+against the PRODUCTION deployment:** second-agent isolation with a real
+account (empty dashboard, cross-tenant 404s), duplicate replay of the real
+paid webhook event (200 `already_active`, still one policy), forged/dev-default
+signatures rejected 400, wrong-password and short-password rejections,
+uniform 404 for bad review tokens, PII-leak grep on the review page, prod env
+audit (exactly the 9 expected vars, no test overrides).
+
+**Post-interview note:** the Razorpay test key, Neon password and one
+superseded AUTH_SECRET passed through the development chat. All are
+test/demo-scope; rotate them (Razorpay: regenerate key; Neon: reset password;
+Vercel: new AUTH_SECRET) once the assignment review is done.
 
 ## MVP-required
 
@@ -47,8 +59,9 @@ happens in the hardening phase; boxes get checked as features land.
 
 ### Secrets & config
 - [x] Secrets only in env vars; `.env` gitignored; `.env.example` committed — Phase 1
-- [x] Env validated at startup (zod, fail fast) — Phase 1
-- [ ] Test-mode keys only; documented per-service mode matrix in README
+- [x] Env validated at startup (zod, fail fast) — Phase 1; caught two mangled
+      values during the actual deployment (ai-log 07)
+- [x] Test-mode keys only; per-service mode matrix documented in README — Ship
 
 ## Production-deferred (named, not built)
 

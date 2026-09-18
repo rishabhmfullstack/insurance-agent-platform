@@ -11,7 +11,8 @@
     "db:migrate": "prisma migrate deploy",
     "db:seed": "prisma db seed",
     "test": "vitest run",
-    "db:local": "node scripts/local-db.mjs"
+    "db:local": "node scripts/local-db.mjs",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",

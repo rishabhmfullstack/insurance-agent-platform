@@ -13,6 +13,8 @@ export async function getApplicationForAgent(id: string, agentId: string) {
       customer: true,
       product: true,
       communications: { orderBy: { createdAt: "desc" } },
+      payments: { orderBy: { createdAt: "desc" } },
+      policy: true,
     },
   });
   if (!app) notFound();
@@ -37,6 +39,15 @@ export async function getApplicationByToken(token: string) {
       customer: { select: { name: true } },
       product: {
         select: { name: true, category: true, coverageAmount: true, description: true },
+      },
+      // Only the payable URL of the OPEN link crosses the token boundary.
+      payments: {
+        where: { status: "CREATED" },
+        select: { shortUrl: true },
+      },
+      // Policy facts the customer should see once active.
+      policy: {
+        select: { policyNumber: true, startDate: true, endDate: true },
       },
     },
   });

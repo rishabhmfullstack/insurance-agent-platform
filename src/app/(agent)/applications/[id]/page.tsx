@@ -15,6 +15,8 @@ import {
   type TimelineStep,
 } from "@/components/applications/status-timeline";
 import { ShareQuoteButton } from "@/components/applications/share-quote-button";
+import { PaymentPanel } from "@/components/applications/payment-panel";
+import { resendEmailAction } from "@/actions/payments";
 
 export const metadata = { title: "Application — Insurance Agent Platform" };
 export const dynamic = "force-dynamic";
@@ -37,6 +39,10 @@ export default async function ApplicationPage({
 
   const quoteShares = app.communications.filter((c) => c.templateKey === "quote_share");
   const lastShare = quoteShares[0];
+  const openPayment = app.payments.find((p) => p.status === "CREATED");
+  const lastEmail = app.communications.find(
+    (c) => c.templateKey === "policy_confirmation",
+  );
 
   const reviewUrl = reviewUrlFor(app.reviewToken);
   const shareMessage = buildQuoteShareMessage({
@@ -155,10 +161,49 @@ export default async function ApplicationPage({
         )}
 
         {app.status === "AGREED" && (
-          <p className="text-sm text-slate-600">
-            Customer agreed on {app.agreedAt ? formatDate(app.agreedAt) : "—"}.
-            Payment link generation arrives in the next phase.
-          </p>
+          <div className="space-y-3">
+            <p className="text-sm text-slate-600">
+              Customer agreed on {app.agreedAt ? formatDate(app.agreedAt) : "—"}.
+              Generate a payment link and share it on WhatsApp.
+            </p>
+            <PaymentPanel applicationId={app.id} status="AGREED" />
+          </div>
+        )}
+
+        {app.status === "PAYMENT_PENDING" && (
+          <PaymentPanel
+            applicationId={app.id}
+            status="PAYMENT_PENDING"
+            paymentUrl={openPayment?.shortUrl}
+          />
+        )}
+
+        {app.status === "ACTIVE" && app.policy && (
+          <div className="space-y-3">
+            <div className="rounded-md bg-green-50 px-4 py-3">
+              <p className="text-sm font-semibold text-green-800">
+                Policy {app.policy.policyNumber} is active
+              </p>
+              <p className="mt-1 text-sm text-green-700">
+                {formatDate(app.policy.startDate)} — {formatDate(app.policy.endDate)} ·
+                Premium paid {formatPaise(app.premiumAmount)}
+              </p>
+            </div>
+            <form action={resendEmailAction} className="flex items-center gap-3">
+              <input type="hidden" name="applicationId" value={app.id} />
+              <button
+                type="submit"
+                className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-100"
+              >
+                Resend confirmation email
+              </button>
+              {lastEmail?.status === "FAILED" && (
+                <span className="text-xs text-red-600">
+                  Last email attempt failed — see the communications log.
+                </span>
+              )}
+            </form>
+          </div>
         )}
       </section>
 

@@ -31,6 +31,27 @@ export function buildQuoteShareMessage(input: {
   ].join("\n");
 }
 
+export function buildPaymentShareMessage(input: {
+  customerName: string;
+  productName: string;
+  premiumDisplay: string;
+  paymentUrl: string;
+}): string {
+  return [
+    `Hi ${input.customerName}, thank you for confirming your quote!`,
+    ``,
+    `${input.productName}`,
+    `Amount payable: ${input.premiumDisplay}`,
+    ``,
+    `Complete the payment securely here:`,
+    input.paymentUrl,
+    ``,
+    `Your policy activates as soon as the payment is verified.`,
+    ``,
+    `(Demo message — test-mode payment, no real money moves.)`,
+  ].join("\n");
+}
+
 /** Click-to-chat deep link: opens WhatsApp with the message prefilled for the
  * agent to send from their own account. */
 export function waMeUrl(phone: string, message: string): string {

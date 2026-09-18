@@ -138,6 +138,7 @@ model Payment {
   id                String        @id @default(uuid()) @db.Uuid
   applicationId     String        @map("application_id") @db.Uuid
   providerLinkId    String        @unique @map("provider_link_id") // Razorpay payment-link id
+  shortUrl          String        @map("short_url") // the payable URL (review page + WhatsApp message)
   providerPaymentId String?       @unique @map("provider_payment_id") // set by webhook; idempotency anchor
   amount            BigInt // paise, copied from frozen premium
   currency          String        @default("INR") @db.Char(3)

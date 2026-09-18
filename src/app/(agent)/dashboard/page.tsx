@@ -3,6 +3,8 @@ import { requireAgent } from "@/lib/session";
 import { listCustomersForAgent } from "@/lib/data/customers";
 import { prisma } from "@/lib/db";
 import { formatDate, formatPaise } from "@/lib/format";
+import { StatusBadge } from "@/components/applications/status-badge";
+import { isQuoteExpired } from "@/lib/domain/applications";
 
 export const metadata = { title: "Dashboard — Insurance Agent Platform" };
 
@@ -94,12 +96,17 @@ export default async function DashboardPage() {
         ) : (
           <ul className="divide-y divide-slate-50">
             {applications.map((a) => (
-              <li key={a.id} className="flex items-center justify-between px-5 py-2.5 text-sm">
-                <span className="text-slate-900">
+              <li key={a.id} className="flex items-center justify-between gap-3 px-5 py-2.5 text-sm">
+                <Link
+                  href={`/applications/${a.id}`}
+                  className="font-medium text-slate-900 hover:underline"
+                >
                   {a.customer.name} — {a.product.name}
-                </span>
-                <span className="text-slate-500">
-                  {formatPaise(a.premiumAmount)} · {a.status} · {formatDate(a.createdAt)}
+                </Link>
+                <span className="flex items-center gap-3 text-slate-500">
+                  {formatPaise(a.premiumAmount)}
+                  <StatusBadge status={a.status} expired={isQuoteExpired(a)} />
+                  {formatDate(a.createdAt)}
                 </span>
               </li>
             ))}

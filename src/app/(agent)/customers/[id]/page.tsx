@@ -6,17 +6,31 @@ import { prisma } from "@/lib/db";
 import { evaluateEligibility } from "@/lib/domain/eligibility";
 import { computePremium } from "@/lib/domain/premium";
 import { ageInYears } from "@/lib/domain/rules";
+import { createQuoteAction } from "@/actions/applications";
 import { formatDate, formatPaise, formatPaiseCompact } from "@/lib/format";
+import { StatusBadge } from "@/components/applications/status-badge";
+import { isQuoteExpired } from "@/lib/domain/applications";
 
 export const metadata = { title: "Customer — Insurance Agent Platform" };
+export const dynamic = "force-dynamic";
+
+const QUOTE_ERRORS: Record<string, string> = {
+  ineligible:
+    "The customer no longer qualifies for that product — eligibility is re-checked at quote creation.",
+  not_found: "That product or customer could not be found.",
+  duplicate: "A live quote already exists for that product.",
+};
 
 export default async function CustomerPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ quoteError?: string }>;
 }) {
   const agent = await requireAgent();
   const { id } = await params;
+  const { quoteError } = await searchParams;
   const customer = await getCustomerForAgent(id, agent.agentId);
 
   const [products, applications] = await Promise.all([
@@ -62,6 +76,12 @@ export default async function CustomerPage({
         <h1 className="mt-1 text-xl font-semibold text-slate-900">{customer.name}</h1>
       </div>
 
+      {quoteError && QUOTE_ERRORS[quoteError] && (
+        <p className="rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-800">
+          {QUOTE_ERRORS[quoteError]}
+        </p>
+      )}
+
       <section className="rounded-lg border border-slate-200 bg-white p-5">
         <h2 className="text-sm font-medium text-slate-900">Customer details</h2>
         <dl className="mt-3 grid gap-x-8 gap-y-2 text-sm sm:grid-cols-2 lg:grid-cols-3">
@@ -98,9 +118,16 @@ export default async function CustomerPage({
                 <span className="font-semibold">{formatPaise(premium)}</span>
                 <span className="text-slate-500"> / year</span>
               </p>
-              <p className="mt-3 text-xs text-slate-400">
-                Quote creation arrives with the application workflow (next phase).
-              </p>
+              <form action={createQuoteAction} className="mt-4">
+                <input type="hidden" name="customerId" value={customer.id} />
+                <input type="hidden" name="productId" value={product.id} />
+                <button
+                  type="submit"
+                  className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
+                >
+                  Create Quote
+                </button>
+              </form>
             </div>
           ))}
           {eligible.length === 0 && (
@@ -152,10 +179,17 @@ export default async function CustomerPage({
         ) : (
           <ul className="divide-y divide-slate-50">
             {applications.map((a) => (
-              <li key={a.id} className="flex items-center justify-between px-5 py-2.5 text-sm">
-                <span className="text-slate-900">{a.product.name}</span>
-                <span className="text-slate-500">
-                  {formatPaise(a.premiumAmount)} · {a.status} · {formatDate(a.createdAt)}
+              <li key={a.id} className="flex items-center justify-between gap-3 px-5 py-2.5 text-sm">
+                <Link
+                  href={`/applications/${a.id}`}
+                  className="font-medium text-slate-900 hover:underline"
+                >
+                  {a.product.name}
+                </Link>
+                <span className="flex items-center gap-3 text-slate-500">
+                  {formatPaise(a.premiumAmount)}
+                  <StatusBadge status={a.status} expired={isQuoteExpired(a)} />
+                  {formatDate(a.createdAt)}
                 </span>
               </li>
             ))}

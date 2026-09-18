@@ -34,6 +34,9 @@ yarn-error.log*
 .env*
 !.env.example
 
+# local PDF storage (dev fallback when no Blob token — see D-08/storage.ts)
+/var/
+
 # vercel
 .vercel
 

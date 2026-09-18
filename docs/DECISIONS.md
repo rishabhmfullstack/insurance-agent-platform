@@ -141,3 +141,17 @@ paid/expired. It exists so the full flow runs locally and in CI without an
 account; its URLs are deliberately inert (`mock-payments.invalid`) and the
 deployed app always runs real test-mode keys. Never presented as a real
 payment; the README service matrix states the active mode.
+
+**D-26 · Tests refuse non-local databases (post-Phase-4 fix).** Once .env's
+DATABASE_URL switched to Neon for deployment prep, `npm test` ran the
+integration suites against the remote database: 18 failures from network
+latency blowing the 5s default timeout, plus cascade failures from aborted
+setup — and, worse in principle, test data written to the deployment DB
+(cleanups did run; Neon was verified clean afterwards). Fix:
+`TEST_DATABASE_URL` override + a fail-closed guard in vitest.setup.ts that
+aborts any test run against a non-local URL (explicit `ALLOW_REMOTE_TEST_DB=1`
+escape hatch), 30s integration timeouts, and a committed local-DB runner
+(`npm run db:local` — embedded real PostgreSQL, UTF8 database creation baked
+in). The suite's correctness was never in question — the same 65 tests pass in
+~2s locally — but "tests can accidentally target production" was a real
+design gap.

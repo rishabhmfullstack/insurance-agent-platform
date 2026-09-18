@@ -5,12 +5,13 @@ export default defineConfig({
   test: {
     include: ["src/**/*.test.ts"],
     environment: "node",
-    // Integration tests hit the real local database — load .env for them.
+    // Loads .env and enforces the local-database guard for integration tests.
     setupFiles: ["./vitest.setup.ts"],
-    // The integration suite shares DB state within its file; files run in
-    // parallel workers but touch disjoint rows.
+    // Integration suites make many sequential DB roundtrips; generous
+    // timeouts so a slow link or CI runner cannot fake a failure.
+    testTimeout: 30_000,
+    hookTimeout: 120_000,
   },
-  esbuild: { jsx: "automatic" },
   resolve: {
     alias: { "@": path.resolve(__dirname, "src") },
   },

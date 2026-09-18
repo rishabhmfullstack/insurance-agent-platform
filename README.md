@@ -46,9 +46,11 @@ Checks: `npm test` (32 domain unit tests) · `npm run typecheck` ·
 `npx tsx scripts/verify-schema.ts` (38 behavioral checks of every DB
 constraint — safe to run on a seeded database)
 
-Local database note: any PostgreSQL works. Development runs real PG 18
-binaries via `embedded-postgres` on port 5433 (see docs/DECISIONS.md D-20);
-create the database with `ENCODING 'UTF8'`.
+Local database: `npm run db:local` starts a real PostgreSQL 18 on port 5433
+(no Docker or install needed; data in var/local-postgres). First time: run
+migrate + seed against it. **Tests refuse to run against a non-local
+database** — keep TEST_DATABASE_URL pointing at the local server even when
+DATABASE_URL points at Neon (see .env.example and docs/DECISIONS.md D-26).
 
 ## Demo credentials (seeded)
 

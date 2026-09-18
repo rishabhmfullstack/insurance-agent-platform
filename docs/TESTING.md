@@ -55,7 +55,10 @@ sent/logged.
   arbitration, attachPdf exactly-once, token access with minimal-PII select,
   agree + idempotency, expiry write-back freeing the unique slot, AGREED
   never expirable), a real PDF render test, and WhatsApp message/url units.
-  NOTE: integration tests need DATABASE_URL + the local database running.
+  NOTE: integration tests need the LOCAL database running
+  (`npm run db:local`, then migrate + seed once). Tests refuse to run against
+  a non-local DATABASE_URL — set TEST_DATABASE_URL (see .env.example); the
+  guard exists because tests write and clean rows (D-26).
   Manual end-to-end over real HTTP (progressive-enhancement form replays,
   multipart): create quote → 303 to application → PDF bytes served → review
   page (anon) → I Agree POST → agreed state on both customer and agent views;

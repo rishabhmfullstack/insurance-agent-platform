@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "db:migrate": "prisma migrate deploy",
     "db:seed": "prisma db seed",
-    "test": "vitest run"
+    "test": "vitest run",
+    "db:local": "node scripts/local-db.mjs"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
@@ -29,8 +30,10 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "dotenv": "^18.0.0",
+    "embedded-postgres": "^18.4.0-beta.17",
     "eslint": "^9",
     "eslint-config-next": "16.3.5",
+    "pg": "^8.23.0",
     "prisma": "^6.19.3",
     "tailwindcss": "^4",
     "tsx": "^4.23.13",
